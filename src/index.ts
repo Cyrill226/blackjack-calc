@@ -1,7 +1,25 @@
 import { addCardToState, setupCardState } from './card-state';
-import { getBetterResult, resultsInPercentage } from './util';
+import { getBetterResult, mapResultResponse } from './util';
 
 const cards: Card[] = [2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K', 'A'];
+
+const handleBlackjack = (player: CardState, dealer: CardState) => {
+  if (dealer.score !== 10 && !dealer.hasAce) {
+    return {
+      blackJackExpectedValue: 250,
+    };
+  }
+  if (dealer.hasAce) {
+    return {
+      blackJackExpectedValue: (4 * 100 + 7 * 250) / 13, // 4/13 chance of getting a 10, 7/13 chance of getting any other card that looses against a blackjack
+    };
+  }
+  if (dealer.score === 10) {
+    return {
+      blackJackExpectedValue: (1 * 100 + 12 * 250) / 13, // 1/13 chance of getting an ace, 12/13 chance of getting any other card that looses against a blackjack
+    };
+  }
+};
 
 const calculateHit = (player: CardState, dealer: CardState): Possibilities => {
   const possibilities = {
@@ -17,7 +35,7 @@ const calculateHit = (player: CardState, dealer: CardState): Possibilities => {
       newPlayerState.score === 21 || // win if score is 21
       (newPlayerState.score === 11 && newPlayerState.hasAce) // win if score (ace counts as 1) is 11 and has ace (ace counts as 11)
     ) {
-      possibilities.winning += 100;
+      possibilities.winning += 100; // TODO: wrong, dealer can still get 21
     } else if (newPlayerState.score > 21) {
       // lose if score is over 21
       possibilities.losing += 100;
@@ -47,6 +65,8 @@ const calculateStand = (
 
   for (const card of cards) {
     const newDealerState = addCardToState(dealer, card);
+    const playerScore =
+      player.score <= 11 && player.hasAce ? player.score + 10 : player.score;
 
     if (newDealerState.score > 21) {
       // win if dealer score is over 21
@@ -55,9 +75,9 @@ const calculateStand = (
       newDealerState.score >= 17 || // dealer stands on 17
       (newDealerState.score === 7 && newDealerState.hasAce) // dealer stands on soft 17
     ) {
-      if (player.score > newDealerState.score) {
+      if (playerScore > newDealerState.score) {
         possibilities.winning += 100;
-      } else if (player.score < newDealerState.score) {
+      } else if (playerScore < newDealerState.score) {
         possibilities.losing += 100;
       } else {
         possibilities.draw += 100;
@@ -75,19 +95,43 @@ const calculateStand = (
   return possibilities;
 };
 
+const calculateDouble = (
+  player: CardState,
+  dealer: CardState
+): Possibilities => {
+  const possibilities = {
+    winning: 0,
+    losing: 0,
+    draw: 0,
+  };
+
+  for (const card of cards) {
+    const newPlayerState = addCardToState(player, card);
+
+    if (newPlayerState.score > 21) {
+      possibilities.losing += 100;
+    } else {
+      const standResults = calculateStand(newPlayerState, dealer);
+
+      possibilities.winning += standResults.winning / 13;
+      possibilities.losing += standResults.losing / 13;
+      possibilities.draw += standResults.draw / 13;
+    }
+  }
+
+  return possibilities;
+};
+
 const calculate = (player: CardState, dealer: CardState): Results => {
   // TODO: do dynamic programming here
   const hit = calculateHit(player, dealer);
   const stand = calculateStand(player, dealer);
+  const double = calculateDouble(player, dealer);
 
   return {
     hit,
     stand,
-    double: {
-      winning: 0,
-      losing: 0,
-      draw: 0,
-    },
+    double,
     split: {
       winning: 0,
       losing: 0,
@@ -100,9 +144,13 @@ const play = (playerCards: Card[], dealerCards: Card[]) => {
   const playerState = setupCardState(playerCards);
   const dealerState = setupCardState(dealerCards);
 
+  if (playerState.hasBlackjack) {
+    return handleBlackjack(playerState, dealerState);
+  }
+
   const results = calculate(playerState, dealerState);
 
-  return resultsInPercentage(results);
+  return mapResultResponse(results);
 };
 
-console.log(play([3, 'K'], [2]));
+console.log(play(['K', 'A'], [6]));

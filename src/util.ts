@@ -21,25 +21,29 @@ export const getBetterResult = (results: Results): Possibilities => {
   return results[betterResult];
 };
 
-export const resultsInPercentage = (results: Results) => ({
-  hit: {
-    winning: results.hit.winning / 13,
-    losing: results.hit.losing / 13,
-    draw: results.hit.draw / 13,
-  },
-  stand: {
-    winning: results.stand.winning / 13,
-    losing: results.stand.losing / 13,
-    draw: results.stand.draw / 13,
-  },
-  double: {
-    winning: results.double.winning / 13,
-    losing: results.double.losing / 13,
-    draw: results.double.draw / 13,
-  },
-  split: {
-    winning: results.split.winning / 13,
-    losing: results.split.losing / 13,
-    draw: results.split.draw / 13,
-  },
-});
+const calculateDoubleEv = (option: Possibilities): number => {
+  const ev = option.winning * 2 + option.draw;
+  return ev > 100 ? (ev - 100) * 2 + 100 : 100 - (100 - ev) * 2;
+};
+
+export const mapResultResponse = (results: Results): ResultsResponse => {
+  const actions = ['hit', 'stand', 'double', 'split'] as const;
+
+  const resultsInPercentage: ResultsResponse = actions.reduce((acc, action) => {
+    const option = {
+      winning: results[action].winning / 13,
+      losing: results[action].losing / 13,
+      draw: results[action].draw / 13,
+    };
+    acc[action] = {
+      ...option,
+      expectedValue:
+        action === 'double'
+          ? calculateDoubleEv(option) // calculate double ev separately because the bet is doubled
+          : option.winning * 2 + option.draw,
+    };
+    return acc;
+  }, {} as ResultsResponse);
+
+  return resultsInPercentage;
+};

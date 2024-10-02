@@ -22,7 +22,7 @@ export const setupCardState = (cards: Card[]): CardState => {
 
   return {
     score,
-    hasAce: score <= 10 && hasAce,
+    hasAce: score <= 11 && hasAce,
     hasPair: cards[0] === cards[1] && cards.length === 2,
     hasBlackjack,
   };

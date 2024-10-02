@@ -19,3 +19,14 @@ type Results = {
   double: Possibilities;
   split: Possibilities;
 };
+
+type PossibilitiesResponse = Possibilities & {
+  expectedValue: number;
+};
+
+type ResultsResponse = {
+  hit: PossibilitiesResponse;
+  stand: PossibilitiesResponse;
+  double: PossibilitiesResponse;
+  split: PossibilitiesResponse;
+};
