@@ -37,10 +37,9 @@ export const mapResultResponse = (results: Results): ResultsResponse => {
     };
     acc[action] = {
       ...option,
-      expectedValue:
-        action === 'double'
-          ? calculateDoubleEv(option) // calculate double ev separately because the bet is doubled
-          : option.winning * 2 + option.draw,
+      expectedValue: ['double', 'split'].includes(action)
+        ? calculateDoubleEv(option) // calculate double ev separately because the bet is doubled
+        : option.winning * 2 + option.draw,
     };
     return acc;
   }, {} as ResultsResponse);

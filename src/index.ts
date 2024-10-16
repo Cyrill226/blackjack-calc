@@ -62,7 +62,6 @@ const calculateStand = (
     losing: 0,
     draw: 0,
   };
-
   for (const card of cards) {
     const newDealerState = addCardToState(dealer, card);
     const playerScore =
@@ -73,7 +72,7 @@ const calculateStand = (
       possibilities.winning += 100;
     } else if (
       newDealerState.score >= 17 || // dealer stands on 17
-      (newDealerState.score === 7 && newDealerState.hasAce) // dealer stands on soft 17
+      (newDealerState.score === 7 && newDealerState.hasAce) // dealer stands on soft 17 // TODO; dealer has to hit on soft 18 19 20 and 21 as well
     ) {
       if (playerScore > newDealerState.score) {
         possibilities.winning += 100;
@@ -122,21 +121,57 @@ const calculateDouble = (
   return possibilities;
 };
 
-const calculate = (player: CardState, dealer: CardState): Results => {
+const calculateSplit = (
+  player: CardState,
+  dealer: CardState,
+  splits: number
+): Possibilities => {
+  const possibilities = {
+    winning: 0,
+    losing: 0,
+    draw: 0,
+  };
+
+  if (!player.hasPair || splits === 4) {
+    return possibilities;
+  }
+
+  if (player.hasPair && player.hasAce) {
+    const newPlayerState = {
+      ...player,
+      hasPair: false,
+      score: 1,
+    };
+    return calculateDouble(newPlayerState, dealer);
+  }
+
+  const newPlayerState = {
+    ...player,
+    hasPair: false,
+    score: player.hasAce ? 1 : player.score / 2,
+  };
+  const childResults = calculate(newPlayerState, dealer, splits + 1);
+  const bestChildResult = getBetterResult(childResults);
+
+  return bestChildResult;
+};
+
+const calculate = (
+  player: CardState,
+  dealer: CardState,
+  splits = 0
+): Results => {
   // TODO: do dynamic programming here
   const hit = calculateHit(player, dealer);
   const stand = calculateStand(player, dealer);
   const double = calculateDouble(player, dealer);
+  const split = calculateSplit(player, dealer, splits);
 
   return {
     hit,
     stand,
     double,
-    split: {
-      winning: 0,
-      losing: 0,
-      draw: 0,
-    },
+    split,
   };
 };
 
@@ -153,4 +188,4 @@ const play = (playerCards: Card[], dealerCards: Card[]) => {
   return mapResultResponse(results);
 };
 
-console.log(play(['K', 'A'], [6]));
+console.log(play(['A', 'A'], [9]));

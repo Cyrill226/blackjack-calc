@@ -6,7 +6,7 @@ export const addCardToState = (player: CardState, card: Card): CardState => {
 
   return {
     score,
-    hasAce: score <= 10 && hasAce,
+    hasAce: score <= 11 && hasAce,
     hasPair: false,
     hasBlackjack: false,
   };
