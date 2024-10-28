@@ -1,3 +1,5 @@
+export const CARDS: Card[] = [2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K', 'A'];
+
 export const getCardAsValue = (card: Card): number => {
   if (['J', 'Q', 'K'].includes(card as string)) {
     return 10;
